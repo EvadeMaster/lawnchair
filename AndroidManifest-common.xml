@@ -16,7 +16,7 @@
 ** See the License for the specific language governing permissions and
 ** limitations under the License.
 **
-** Modifications copyright 2021, Lawnchair
+** Modifications copyright 2024, Lawnchair
 */
 -->
 <manifest
@@ -43,7 +43,7 @@
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
     <uses-permission android:name="android.permission.ACCESS_RESTRICTED_SETTINGS" />
-    
+
     <!-- for rotating surface by arbitrary degree -->
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.ROTATE_SURFACE_FLINGER" />
@@ -71,6 +71,7 @@
 
     <application
         android:backupAgent="com.android.launcher3.LauncherBackupAgent"
+        android:name="com.android.launcher3.LauncherApplication"
         android:fullBackupOnly="true"
         android:backupInForeground="true"
         android:fullBackupContent="@xml/backupscheme"

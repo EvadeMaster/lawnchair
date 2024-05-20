@@ -39,6 +39,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
 
+import com.android.launcher3.Utilities;
 import com.android.launcher3.util.PackageUserKey;
 import com.android.launcher3.util.SettingsCache;
 
@@ -364,8 +365,11 @@ public class NotificationListener extends NotificationListenerService {
     }
 
     private static Pair<PackageUserKey, NotificationKeyData> toKeyPair(StatusBarNotification sbn) {
-        return Pair.create(PackageUserKey.fromNotification(sbn),
-                NotificationKeyData.fromNotification(sbn));
+        if (Utilities.ATLEAST_P) {
+            return Pair.create(PackageUserKey.fromNotification(sbn),
+                    NotificationKeyData.fromNotification(sbn));
+        }
+        return Pair.create(PackageUserKey.fromNotification(sbn), null);
     }
 
     public interface NotificationsChangedListener {

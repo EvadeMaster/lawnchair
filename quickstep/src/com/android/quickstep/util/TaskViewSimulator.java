@@ -17,6 +17,7 @@ package com.android.quickstep.util;
 
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 
+import static com.android.launcher3.Flags.enableGridOnlyOverview;
 import static com.android.launcher3.states.RotationHelper.deltaRotation;
 import static com.android.launcher3.touch.PagedOrientationHandler.MATRIX_POST_TRANSLATE;
 import static com.android.launcher3.util.SplitConfigurationOptions.STAGE_POSITION_BOTTOM_OR_RIGHT;
@@ -26,6 +27,7 @@ import static com.android.launcher3.util.SplitConfigurationOptions.StagePosition
 import static com.android.quickstep.TaskAnimationManager.ENABLE_SHELL_TRANSITIONS;
 import static com.android.quickstep.util.RecentsOrientedState.postDisplayRotation;
 import static com.android.quickstep.util.RecentsOrientedState.preDisplayRotation;
+import static com.android.quickstep.util.SplitScreenUtils.convertLauncherSplitBoundsToShell;
 
 import android.animation.TimeInterpolator;
 import android.content.Context;
@@ -90,7 +92,6 @@ public class TaskViewSimulator implements TransformParams.BuilderProxy {
     private final FullscreenDrawParams mCurrentFullscreenParams;
     public final AnimatedFloat taskPrimaryTranslation = new AnimatedFloat();
     public final AnimatedFloat taskSecondaryTranslation = new AnimatedFloat();
-    public final AnimatedFloat scrollScale = new AnimatedFloat();
 
     // RecentsView properties
     public final AnimatedFloat recentsViewScale = new AnimatedFloat();
@@ -108,6 +109,7 @@ public class TaskViewSimulator implements TransformParams.BuilderProxy {
     private boolean mIsDesktopTask;
     private int mTaskRectTranslationX;
     private int mTaskRectTranslationY;
+    private int mPivotOffsetX;
 
     public TaskViewSimulator(Context context, BaseActivityInterface sizeStrategy) {
         mContext = context;
@@ -120,9 +122,6 @@ public class TaskViewSimulator implements TransformParams.BuilderProxy {
         mOrientationStateId = mOrientationState.getStateId();
         Resources resources = context.getResources();
         mIsRecentsRtl = mOrientationState.getOrientationHandler().getRecentsRtlSetting(resources);
-        //nick@lmo-20231004 this does belong here to avoid flicker in animation due to race of setting
-        // value to 1. other code assumes it starts with 1 anyway, so let's just do it here
-        this.scrollScale.value = 1;
     }
 
     /**
@@ -150,12 +149,6 @@ public class TaskViewSimulator implements TransformParams.BuilderProxy {
             return 1;
         }
 
-        if (mIsDesktopTask) {
-            mTaskRect.set(mThumbnailPosition);
-            mPivot.set(mTaskRect.centerX(), mTaskRect.centerY());
-            return 1;
-        }
-
         if (mIsGridTask) {
             mSizeStrategy.calculateGridTaskSize(mContext, mDp, mTaskRect,
                     mOrientationState.getOrientationHandler());
@@ -173,10 +166,25 @@ public class TaskViewSimulator implements TransformParams.BuilderProxy {
             mOrientationState.getOrientationHandler()
                     .setSplitTaskSwipeRect(mDp, mTaskRect, mSplitBounds, mStagePosition);
             mTaskRect.offset(mTaskRectTranslationX, mTaskRectTranslationY);
+        } else if (mIsDesktopTask) {
+            // For desktop, tasks can take up only part of the screen size.
+            // Full task size represents the whole screen size, but scaled down to fit in recents.
+            // Task rect will represent the scaled down thumbnail position and is placed inside
+            // full task size as it is on the home screen.
+            fullTaskSize = new Rect(mTaskRect);
+            PointF fullscreenTaskDimension = new PointF();
+            BaseActivityInterface.getTaskDimension(mContext, mDp, fullscreenTaskDimension);
+            // Calculate the scale down factor used in recents
+            float scale = fullTaskSize.width() / fullscreenTaskDimension.x;
+            mTaskRect.set(mThumbnailPosition);
+            mTaskRect.scale(scale);
+            // Ensure the task rect is inside the full task rect
+            mTaskRect.offset(fullTaskSize.left, fullTaskSize.top);
         } else {
-            fullTaskSize = mTaskRect;
+            fullTaskSize = new Rect(mTaskRect);
+            mTaskRect.offset(mTaskRectTranslationX, mTaskRectTranslationY);
         }
-        fullTaskSize.offset(mTaskRectTranslationX, mTaskRectTranslationY);
+        fullTaskSize.offset(mTaskRectTranslationX + mPivotOffsetX, mTaskRectTranslationY);
         return mOrientationState.getFullScreenScaleAndPivot(fullTaskSize, mDp, mPivot);
     }
 
@@ -206,7 +214,8 @@ public class TaskViewSimulator implements TransformParams.BuilderProxy {
         mStagePosition = mThumbnailPosition.equals(splitInfo.leftTopBounds) ?
                 STAGE_POSITION_TOP_OR_LEFT :
                 STAGE_POSITION_BOTTOM_OR_RIGHT;
-        mPositionHelper.setSplitBounds(convertSplitBounds(mSplitBounds), mStagePosition);
+        mPositionHelper.setSplitBounds(convertLauncherSplitBoundsToShell(mSplitBounds),
+                mStagePosition);
     }
 
     /**
@@ -259,6 +268,11 @@ public class TaskViewSimulator implements TransformParams.BuilderProxy {
      */
     public void addAppToOverviewAnim(PendingAnimation pa, TimeInterpolator interpolator) {
         pa.addFloat(fullScreenProgress, AnimatedFloat.VALUE, 1, 0, interpolator);
+        if (enableGridOnlyOverview() && mDp.isTablet) {
+            int translationXToMiddle = mDp.widthPx / 2 - mTaskRect.centerX();
+            taskPrimaryTranslation.value = translationXToMiddle;
+            mPivotOffsetX = translationXToMiddle;
+        }
         pa.addFloat(recentsViewScale, AnimatedFloat.VALUE, getFullScreenScale(), 1, interpolator);
     }
 
@@ -339,8 +353,7 @@ public class TaskViewSimulator implements TransformParams.BuilderProxy {
             boolean isRtlEnabled = !mIsRecentsRtl;
             mPositionHelper.updateThumbnailMatrix(
                     mThumbnailPosition, mThumbnailData, mTaskRect.width(), mTaskRect.height(),
-                    mDp.widthPx, mDp.heightPx, mDp.taskbarHeight, mDp.isTablet,
-                    mOrientationState.getRecentsActivityRotation(), isRtlEnabled);
+                    mDp.isTablet, mOrientationState.getRecentsActivityRotation(), isRtlEnabled);
             mPositionHelper.getMatrix().invert(mInversePositionMatrix);
             if (DEBUG) {
                 Log.d(TAG, " taskRect: " + mTaskRect);
@@ -348,9 +361,8 @@ public class TaskViewSimulator implements TransformParams.BuilderProxy {
         }
 
         float fullScreenProgress = Utilities.boundToRange(this.fullScreenProgress.value, 0, 1);
-        float scrollScale = this.scrollScale.value * (1f - fullScreenProgress) + fullScreenProgress;
         mCurrentFullscreenParams.setProgress(fullScreenProgress, recentsViewScale.value,
-                /* taskViewScale= */1f, mTaskRect.width(), mDp, mPositionHelper);
+                /* taskViewScale= */1f);
 
         // Apply thumbnail matrix
         float taskWidth = mTaskRect.width();
@@ -360,8 +372,6 @@ public class TaskViewSimulator implements TransformParams.BuilderProxy {
 
         // Apply TaskView matrix: taskRect, translate
         mMatrix.postTranslate(mTaskRect.left, mTaskRect.top);
-        mMatrix.postScale(scrollScale, scrollScale, mTaskRect.left + (mTaskRect.width() / 2),
-                mTaskRect.top + (mTaskRect.height() / 2));
         mOrientationState.getOrientationHandler().setPrimary(mMatrix, MATRIX_POST_TRANSLATE,
                 taskPrimaryTranslation.value);
         mOrientationState.getOrientationHandler().setSecondary(mMatrix, MATRIX_POST_TRANSLATE,
@@ -399,8 +409,6 @@ public class TaskViewSimulator implements TransformParams.BuilderProxy {
                 + " recentsSecondaryT: " + recentsViewSecondaryTranslation.value
                 + " taskSecondaryT: " + taskSecondaryTranslation.value
                 + " recentsScroll: " + recentsViewScroll.value
-                + " scrollScale: " + scrollScale
-                + " this.scrollScale.value: " + this.scrollScale.value
                 + " pivot: " + mPivot
         );
     }
@@ -419,7 +427,16 @@ public class TaskViewSimulator implements TransformParams.BuilderProxy {
             // conflict with layers that WM core positions (ie. the input consumers).  For shell
             // transitions, the animation leashes are reparented to an animation container so we
             // can bump layers as needed.
-            builder.setLayer(0);
+            if (ENABLE_SHELL_TRANSITIONS) {
+                builder.setLayer(mDrawsBelowRecents
+                        ? Integer.MIN_VALUE + app.prefixOrderIndex
+                        // 1000 is an arbitrary number to give room for multiple layers.
+                        : Integer.MAX_VALUE - 1000 + app.prefixOrderIndex);
+            } else {
+                builder.setLayer(mDrawsBelowRecents
+                        ? Integer.MIN_VALUE + app.prefixOrderIndex
+                        : 0);
+            }
         }
     }
 
@@ -435,17 +452,5 @@ public class TaskViewSimulator implements TransformParams.BuilderProxy {
 
         // Ideally we should use square-root. This is an optimization as one of the dimension is 0.
         return Math.max(Math.abs(mTempPoint[0]), Math.abs(mTempPoint[1]));
-    }
-
-    /**
-     * TODO(b/254378592): Remove this after consolidation of classes
-     */
-    public static com.android.wm.shell.util.SplitBounds convertSplitBounds(SplitBounds bounds) {
-        return new com.android.wm.shell.util.SplitBounds(
-                bounds.leftTopBounds,
-                bounds.rightBottomBounds,
-                bounds.leftTopTaskId,
-                bounds.rightBottomTaskId
-        );
     }
 }

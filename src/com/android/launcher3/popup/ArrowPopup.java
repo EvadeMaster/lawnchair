@@ -23,7 +23,6 @@ import static com.android.app.animation.Interpolators.DECELERATED_EASE;
 import static com.android.app.animation.Interpolators.EMPHASIZED_ACCELERATE;
 import static com.android.app.animation.Interpolators.EMPHASIZED_DECELERATE;
 import static com.android.app.animation.Interpolators.LINEAR;
-import static com.android.launcher3.config.FeatureFlags.ENABLE_MATERIAL_U_POPUP;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -66,8 +65,7 @@ import app.lawnchair.theme.color.ColorTokens;
 import app.lawnchair.theme.drawable.DrawableTokens;
 
 /**
- * A container for shortcuts to deep links and notifications associated with an
- * app.
+ * A container for shortcuts to deep links and notifications associated with an app.
  *
  * @param <T> The activity on with the popup shows
  */
@@ -94,7 +92,7 @@ public abstract class ArrowPopup<T extends Context & ActivityContext>
     private static final int OPEN_CHILD_FADE_DURATION_U = 83;
     private static final int OPEN_OVERSHOOT_DURATION_U = 200;
 
-    private static final int CLOSE_DURATION_U = 233;
+    private static final int CLOSE_DURATION_U  = 233;
     private static final int CLOSE_FADE_START_DELAY_U = 150;
     private static final int CLOSE_FADE_DURATION_U = 83;
     private static final int CLOSE_CHILD_FADE_START_DELAY_U = 150;
@@ -130,15 +128,15 @@ public abstract class ArrowPopup<T extends Context & ActivityContext>
 
     private RunnableList mOnCloseCallbacks = new RunnableList();
 
-    // The rect string of the view that the arrow is attached to, in screen
-    // reference frame.
+    // The rect string of the view that the arrow is attached to, in screen reference frame.
     protected int mArrowColor;
 
     protected final float mElevation;
 
+    // Tag for Views that have children that will need to be iterated to add styling.
     private final String mIterateChildrenTag;
 
-    public final int[] mColors;
+    protected final int[] mColorIds;
 
     public ArrowPopup(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
@@ -146,15 +144,12 @@ public abstract class ArrowPopup<T extends Context & ActivityContext>
         mOutlineRadius = Themes.getDialogCornerRadius(context);
         mActivityContext = ActivityContext.lookupContext(context);
         mIsRtl = Utilities.isRtl(getResources());
-
-        int popupPrimaryColor = ColorTokens.PopupColorPrimary.resolveColor(context);
-        mArrowColor = popupPrimaryColor;
+        
         mElevation = getResources().getDimension(R.dimen.deep_shortcuts_elevation);
 
         // Initialize arrow view
         final Resources resources = getResources();
-        mArrowColor = getColorStateList(getContext(), R.color.popup_color_background)
-                .getDefaultColor();
+        mArrowColor = ColorTokens.PopupColorPrimary.resolveColor(context); // TODO: AOSP Color use is popup_color_background!
         mChildContainerMargin = resources.getDimensionPixelSize(R.dimen.popup_margin);
         mArrowWidth = resources.getDimensionPixelSize(R.dimen.popup_arrow_width);
         mArrowHeight = resources.getDimensionPixelSize(R.dimen.popup_arrow_height);
@@ -167,24 +162,23 @@ public abstract class ArrowPopup<T extends Context & ActivityContext>
 
         int smallerRadius = resources.getDimensionPixelSize(R.dimen.popup_smaller_radius);
         mRoundedTop = new GradientDrawable();
+        int popupPrimaryColor = ColorTokens.PopupColorPrimary.resolveColor(context); // Lawnchair!
         mRoundedTop.setColor(popupPrimaryColor);
         mRoundedTop.setCornerRadii(new float[] { mOutlineRadius, mOutlineRadius, mOutlineRadius,
-                mOutlineRadius, smallerRadius, smallerRadius, smallerRadius, smallerRadius });
+                mOutlineRadius, smallerRadius, smallerRadius, smallerRadius, smallerRadius});
 
         mRoundedBottom = new GradientDrawable();
         mRoundedBottom.setColor(popupPrimaryColor);
         mRoundedBottom.setCornerRadii(new float[] { smallerRadius, smallerRadius, smallerRadius,
-                smallerRadius, mOutlineRadius, mOutlineRadius, mOutlineRadius, mOutlineRadius });
+                smallerRadius, mOutlineRadius, mOutlineRadius, mOutlineRadius, mOutlineRadius});
 
         mIterateChildrenTag = getContext().getString(R.string.popup_container_iterate_children);
 
-        if (!FeatureFlags.showMaterialUPopup(getContext()) && mActivityContext.canUseMultipleShadesForPopup()) {
-            mColors = new int[] {
-                    ColorTokens.PopupShadeFirst.resolveColor(context),
-                    ColorTokens.PopupShadeSecond.resolveColor(context),
-                    ColorTokens.PopupShadeThird.resolveColor(context) };
+        if (!true && mActivityContext.canUseMultipleShadesForPopup()) { // TODO: @NullCube - Legacy!
+            mColorIds = new int[]{R.color.popup_shade_first, R.color.popup_shade_second,
+                R.color.popup_shade_third};
         } else {
-            mColors = new int[]{ ColorTokens.PopupShadeFirst.resolveColor(context)};
+            mColorIds = new int[]{ColorTokens.PopupShadeFirst.resolveColor(context)}; // Lawnchair!
         }
     }
 
@@ -231,15 +225,15 @@ public abstract class ArrowPopup<T extends Context & ActivityContext>
     }
 
     /**
-     * @param backgroundColor When Color.TRANSPARENT, we get color from
-     *                        {@link #mColors}.
+     * @param backgroundColor When Color.TRANSPARENT, we get color from {@link #mColorIds}.
      *                        Otherwise, we will use this color for all child views.
      */
     protected void assignMarginsAndBackgrounds(ViewGroup viewGroup, int backgroundColor) {
         int[] colors = null;
         if (backgroundColor == Color.TRANSPARENT) {
             // Lazily get the colors so they match the current wallpaper colors.
-            colors = mColors;
+            colors = Arrays.stream(mColorIds).map(
+                    r -> getColorStateList(getContext(), r).getDefaultColor()).toArray();
         }
 
         int count = viewGroup.getChildCount();
@@ -251,14 +245,13 @@ public abstract class ArrowPopup<T extends Context & ActivityContext>
             }
         }
 
-        int numVisibleChild = 0;
         int numVisibleShortcut = 0;
         View lastView = null;
         AnimatorSet colorAnimator = new AnimatorSet();
         for (int i = 0; i < count; i++) {
             View view = viewGroup.getChildAt(i);
             if (view.getVisibility() == VISIBLE) {
-                if (lastView != null) {
+                if (lastView != null && (isShortcutContainer(lastView))) {
                     MarginLayoutParams mlp = (MarginLayoutParams) lastView.getLayoutParams();
                     mlp.bottomMargin = mChildContainerMargin;
                 }
@@ -267,45 +260,43 @@ public abstract class ArrowPopup<T extends Context & ActivityContext>
                 mlp.bottomMargin = 0;
 
                 if (colors != null) {
-                    if (!FeatureFlags.showMaterialUPopup(getContext())) {
+                    if (!true) { // TODO: @NullCube - legacy!
                         backgroundColor = colors[numVisibleChild % colors.length];
                     }
 
-                    if (FeatureFlags.showMaterialUPopup(getContext()) && isShortcutContainer(view)) {
+                    if (true && isShortcutContainer(view)) { // TODO: @NullCube - legacy!
                         setChildColor(view, colors[0], colorAnimator);
                         mArrowColor = colors[0];
                     }
                 }
 
                 // Arrow color matches the first child or the last child.
-                if (!FeatureFlags.showMaterialUPopup(getContext())
-                        && (mIsAboveIcon || (numVisibleChild == 0 && viewGroup == this))) {
+                if (!true
+                        && (mIsAboveIcon || (numVisibleChild == 0 && viewGroup == this))) {// TODO: @NullCube - legacy!
                     mArrowColor = backgroundColor;
                 }
 
                 if (view instanceof ViewGroup && isShortcutContainer(view)) {
                     assignMarginsAndBackgrounds((ViewGroup) view, backgroundColor);
-                    numVisibleChild++;
                     continue;
                 }
 
                 if (isShortcutOrWrapper(view)) {
                     if (totalVisibleShortcuts == 1) {
-                        view.setBackground(DrawableTokens.SingleItemPrimary.resolve(getContext()));
+                        view.setBackground(DrawableTokens.SingleItemPrimary.resolve(getContext())); // Lawnchair!
                     } else if (totalVisibleShortcuts > 1) {
                         if (numVisibleShortcut == 0) {
                             view.setBackground(mRoundedTop.getConstantState().newDrawable());
                         } else if (numVisibleShortcut == (totalVisibleShortcuts - 1)) {
                             view.setBackground(mRoundedBottom.getConstantState().newDrawable());
                         } else {
-                            view.setBackground(DrawableTokens.MiddleItemPrimary.resolve(getContext()));
+                            view.setBackground(DrawableTokens.MiddleItemPrimary.resolve(getContext())); // Lawnchair!
                         }
                         numVisibleShortcut++;
                     }
                 }
 
                 setChildColor(view, backgroundColor, colorAnimator);
-                numVisibleChild++;
             }
         }
 
@@ -382,8 +373,7 @@ public abstract class ArrowPopup<T extends Context & ActivityContext>
 
         if (Gravity.isVertical(mGravity)) {
             // This is only true if there wasn't room for the container next to the icon,
-            // so we centered it instead. In that case we don't want to showDefaultOptions
-            // the arrow.
+            // so we centered it instead. In that case we don't want to showDefaultOptions the arrow.
             mArrow.setVisibility(INVISIBLE);
         } else {
             updateArrowColor();
@@ -419,11 +409,9 @@ public abstract class ArrowPopup<T extends Context & ActivityContext>
     protected abstract void getTargetObjectLocation(Rect outPos);
 
     /**
-     * Orients this container above or below the given icon, aligning with the left
-     * or right.
+     * Orients this container above or below the given icon, aligning with the left or right.
      *
-     * These are the preferred orientations, in order (RTL prefers right-aligned
-     * over left):
+     * These are the preferred orientations, in order (RTL prefers right-aligned over left):
      * - Above and left-aligned
      * - Above and right-aligned
      * - Below and left-aligned
@@ -439,20 +427,15 @@ public abstract class ArrowPopup<T extends Context & ActivityContext>
     /**
      * @see #orientAboutObject()
      *
-     * @param allowAlignLeft  Set to false if we already tried aligning left and
-     *                        didn't have room.
-     * @param allowAlignRight Set to false if we already tried aligning right and
-     *                        didn't have room.
-     *                        TODO: Can we test this with all permutations of
-     *                        widths/heights and icon locations + RTL?
+     * @param allowAlignLeft Set to false if we already tried aligning left and didn't have room.
+     * @param allowAlignRight Set to false if we already tried aligning right and didn't have room.
+     * TODO: Can we test this with all permutations of widths/heights and icon locations + RTL?
      */
     private void orientAboutObject(boolean allowAlignLeft, boolean allowAlignRight) {
         measure(MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED);
 
-        int extraVerticalSpace = mArrowHeight + mArrowOffsetVertical
-                + getResources().getDimensionPixelSize(R.dimen.popup_vertical_padding);
-        // The margins are added after we call this method, so we need to account for
-        // them here.
+        int extraVerticalSpace = mArrowHeight + mArrowOffsetVertical + getExtraVerticalOffset();
+        // The margins are added after we call this method, so we need to account for them here.
         int numVisibleChildren = 0;
         for (int i = getChildCount() - 1; i >= 0; --i) {
             if (getChildAt(i).getVisibility() == VISIBLE) {
@@ -473,20 +456,18 @@ public abstract class ArrowPopup<T extends Context & ActivityContext>
         mIsLeftAligned = !mIsRtl ? allowAlignLeft : !allowAlignRight;
         int x = mIsLeftAligned ? leftAlignedX : rightAlignedX;
 
-        // Offset x so that the arrow and shortcut icons are center-aligned with the
-        // original icon.
+        // Offset x so that the arrow and shortcut icons are center-aligned with the original icon.
         int iconWidth = mTempRect.width();
         int xOffset = iconWidth / 2 - mArrowOffsetHorizontal - mArrowWidth / 2;
         x += mIsLeftAligned ? xOffset : -xOffset;
 
-        // Check whether we can still align as we originally wanted, now that we've
-        // calculated x.
+        // Check whether we can still align as we originally wanted, now that we've calculated x.
         if (!allowAlignLeft && !allowAlignRight) {
-            // We've already tried both ways and couldn't make it fit. onLayout() will set
-            // the
+            // We've already tried both ways and couldn't make it fit. onLayout() will set the
             // gravity to CENTER_HORIZONTAL, but continue below to update y.
         } else {
-            boolean canBeLeftAligned = x + width + insets.left < dragLayer.getWidth() - insets.right;
+            boolean canBeLeftAligned = x + width + insets.left
+                    < dragLayer.getWidth() - insets.right;
             boolean canBeRightAligned = x > insets.left;
             boolean alignmentStillValid = mIsLeftAligned && canBeLeftAligned
                     || !mIsLeftAligned && canBeRightAligned;
@@ -513,11 +494,9 @@ public abstract class ArrowPopup<T extends Context & ActivityContext>
 
         mGravity = 0;
         if ((insets.top + y + height) > (dragLayer.getBottom() - insets.bottom)) {
-            // The container is opening off the screen, so just center it in the drag layer
-            // instead.
+            // The container is opening off the screen, so just center it in the drag layer instead.
             mGravity = Gravity.CENTER_VERTICAL;
-            // Put the container next to the icon, preferring the right side in ltr (left in
-            // rtl).
+            // Put the container next to the icon, preferring the right side in ltr (left in rtl).
             int rightSide = leftAlignedX + iconWidth - insets.left;
             int leftSide = rightAlignedX - iconWidth - insets.left;
             if (!mIsRtl) {
@@ -549,8 +528,10 @@ public abstract class ArrowPopup<T extends Context & ActivityContext>
         FrameLayout.LayoutParams arrowLp = (FrameLayout.LayoutParams) mArrow.getLayoutParams();
         if (mIsAboveIcon) {
             arrowLp.gravity = lp.gravity = Gravity.BOTTOM;
-            lp.bottomMargin = getPopupContainer().getHeight() - y - getMeasuredHeight() - insets.top;
-            arrowLp.bottomMargin = lp.bottomMargin - arrowLp.height - mArrowOffsetVertical - insets.bottom;
+            lp.bottomMargin =
+                    getPopupContainer().getHeight() - y - getMeasuredHeight() - insets.top;
+            arrowLp.bottomMargin =
+                    lp.bottomMargin - arrowLp.height - mArrowOffsetVertical - insets.bottom;
         } else {
             arrowLp.gravity = lp.gravity = Gravity.TOP;
             lp.topMargin = y + insets.top;
@@ -592,7 +573,7 @@ public abstract class ArrowPopup<T extends Context & ActivityContext>
 
     protected void animateOpen() {
         setVisibility(View.VISIBLE);
-        mOpenCloseAnimator = FeatureFlags.showMaterialUPopup(getContext())
+        mOpenCloseAnimator = true // TODO: @NullCube - legacy!
                 ? getMaterialUOpenCloseAnimator(
                         true,
                         OPEN_DURATION_U,
@@ -692,7 +673,7 @@ public abstract class ArrowPopup<T extends Context & ActivityContext>
         }
         mIsOpen = false;
 
-        mOpenCloseAnimator = FeatureFlags.showMaterialUPopup(getContext())
+        mOpenCloseAnimator = true // TODO: @NullCube Legacy!
                 ? getMaterialUOpenCloseAnimator(
                         false,
                         CLOSE_DURATION_U,
@@ -724,6 +705,10 @@ public abstract class ArrowPopup<T extends Context & ActivityContext>
         mOpenCloseAnimator.start();
     }
 
+    public int getExtraVerticalOffset() {
+        return getResources().getDimensionPixelSize(R.dimen.popup_vertical_padding);
+    }
+
     protected AnimatorSet getMaterialUOpenCloseAnimator(boolean isOpening, int scaleDuration,
             int fadeStartDelay, int fadeDuration, int childFadeStartDelay, int childFadeDuration,
             Interpolator interpolator) {
@@ -737,8 +722,8 @@ public abstract class ArrowPopup<T extends Context & ActivityContext>
             setPivotY(mIsAboveIcon ? getMeasuredHeight() : 0f);
         }
 
-        float[] alphaValues = isOpening ? new float[] { 0, 1 } : new float[] { 1, 0 };
-        float[] scaleValues = isOpening ? new float[] { 0.5f, 1.02f } : new float[] { 1f, 0.5f };
+        float[] alphaValues = isOpening ? new float[] {0, 1} : new float[] {1, 0};
+        float[] scaleValues = isOpening ? new float[] {0.5f, 1.02f} : new float[] {1f, 0.5f};
         Animator alpha = getAnimatorOfFloat(this, View.ALPHA, fadeDuration, fadeStartDelay,
                 LINEAR, alphaValues);
         Animator arrowAlpha = getAnimatorOfFloat(mArrow, View.ALPHA, fadeDuration, fadeStartDelay,
@@ -750,7 +735,7 @@ public abstract class ArrowPopup<T extends Context & ActivityContext>
 
         final AnimatorSet animatorSet = new AnimatorSet();
         if (isOpening) {
-            float[] scaleValuesOvershoot = new float[] { 1.02f, 1f };
+            float[] scaleValuesOvershoot = new float[] {1.02f, 1f};
             PathInterpolator overshootInterpolator = new PathInterpolator(0.3f, 0, 0.33f, 1f);
             Animator overshootY = getAnimatorOfFloat(this, View.SCALE_Y,
                     OPEN_OVERSHOOT_DURATION_U, scaleDuration, overshootInterpolator,
@@ -769,7 +754,7 @@ public abstract class ArrowPopup<T extends Context & ActivityContext>
     }
 
     private Animator getAnimatorOfFloat(View view, Property<View, Float> property,
-            int duration, int startDelay, Interpolator interpolator, float... values) {
+            int duration, int startDelay, Interpolator interpolator,  float... values) {
         Animator animator = ObjectAnimator.ofFloat(view, property, values);
         animator.setDuration(duration);
         animator.setInterpolator(interpolator);
@@ -778,18 +763,14 @@ public abstract class ArrowPopup<T extends Context & ActivityContext>
     }
 
     /**
-     * Called when creating the open transition allowing subclass can add additional
-     * animations.
+     * Called when creating the open transition allowing subclass can add additional animations.
      */
-    protected void onCreateOpenAnimation(AnimatorSet anim) {
-    }
+    protected void onCreateOpenAnimation(AnimatorSet anim) { }
 
     /**
-     * Called when creating the close transition allowing subclass can add
-     * additional animations.
+     * Called when creating the close transition allowing subclass can add additional animations.
      */
-    protected void onCreateCloseAnimation(AnimatorSet anim) {
-    }
+    protected void onCreateCloseAnimation(AnimatorSet anim) { }
 
     /**
      * Closes the popup without animation.

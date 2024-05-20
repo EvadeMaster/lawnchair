@@ -51,7 +51,7 @@ import com.android.launcher3.views.ActivityContext;
 /**
  * Implements a DropTarget.
  */
-public abstract class ButtonDropTarget extends TextView
+public abstract class ButtonDropTarget extends TextView // TODO: @LC-Housekeeping Should Extend androidx.appcompat.widget.AppCompatTextView?
         implements DropTarget, DragController.DragListener, OnClickListener {
 
     private static final int[] sTempCords = new int[2];

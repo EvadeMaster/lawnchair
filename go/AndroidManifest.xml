@@ -26,6 +26,7 @@
     <uses-permission android:name="android.permission.GET_TOP_ACTIVITY_INFO" />
 
     <application
+        android:name="app.lawnchair.go.LawnchairApp"
         android:backupAgent="com.android.launcher3.LauncherBackupAgent"
         android:fullBackupOnly="true"
         android:fullBackupContent="@xml/backupscheme"

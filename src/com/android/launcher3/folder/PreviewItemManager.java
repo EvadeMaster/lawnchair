@@ -21,6 +21,7 @@ import static com.android.launcher3.folder.ClippedFolderIconLayoutRule.EXIT_INDE
 import static com.android.launcher3.folder.ClippedFolderIconLayoutRule.MAX_NUM_ITEMS_IN_PREVIEW;
 import static com.android.launcher3.folder.FolderIcon.DROP_IN_ANIMATION_DURATION;
 import static com.android.launcher3.graphics.PreloadIconDrawable.newPendingIcon;
+import static com.android.launcher3.icons.BitmapInfo.FLAG_THEMED;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -42,6 +43,7 @@ import com.android.launcher3.Utilities;
 import com.android.launcher3.graphics.PreloadIconDrawable;
 import com.android.launcher3.model.data.ItemInfoWithIcon;
 import com.android.launcher3.model.data.WorkspaceItemInfo;
+import com.android.launcher3.util.Themes;
 import com.android.launcher3.views.ActivityContext;
 
 import java.util.ArrayList;
@@ -433,7 +435,8 @@ public class PreviewItemManager {
             drawable.setLevel(item.getProgressLevel());
             p.drawable = drawable;
         } else {
-            p.drawable = item.newIcon(mContext);
+            p.drawable = item.newIcon(mContext,
+                    Themes.isThemedIconEnabled(mContext) ? FLAG_THEMED : 0);
         }
         p.drawable.setBounds(0, 0, mIconSize, mIconSize);
         p.item = item;

@@ -18,10 +18,12 @@ package com.android.launcher3.notification;
 
 import android.app.Notification;
 import android.app.Person;
+import android.os.Build;
 import android.service.notification.StatusBarNotification;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 
 import com.android.launcher3.Utilities;
 
@@ -49,6 +51,7 @@ public class NotificationKeyData {
         this.personKeysFromNotification = personKeysFromNotification;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.P)
     public static NotificationKeyData fromNotification(StatusBarNotification sbn) {
         Notification notif = sbn.getNotification();
         return new NotificationKeyData(sbn.getKey(), notif.getShortcutId(), notif.number,
@@ -69,8 +72,11 @@ public class NotificationKeyData {
         if (people == null || people.isEmpty()) {
             return Utilities.EMPTY_STRING_ARRAY;
         }
-        return people.stream().filter(person -> person.getKey() != null)
-                .map(Person::getKey).sorted().toArray(String[]::new);
+        if (Utilities.ATLEAST_P) {
+            return people.stream().filter(person -> person.getKey() != null)
+                    .map(Person::getKey).sorted().toArray(String[]::new);
+        }
+        return Utilities.EMPTY_STRING_ARRAY;
     }
 
     @Override

@@ -15,7 +15,6 @@
  */
 package com.android.launcher3.taskbar;
 
-import static com.android.launcher3.config.FeatureFlags.ENABLE_MATERIAL_U_POPUP;
 import static com.android.launcher3.util.SplitConfigurationOptions.getLogEventForPosition;
 
 import android.content.Intent;
@@ -164,10 +163,10 @@ public class TaskbarPopupController implements TaskbarControllers.LoggableTaskba
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
-        if (FeatureFlags.showMaterialUPopup(icon.getContext())) {
+        if (true) { // TODO: @NullCube - Legacy!
             container = (PopupContainerWithArrow) context.getLayoutInflater().inflate(
                     R.layout.popup_container_material_u, context.getDragLayer(), false);
-            container.populateAndShowRowsMaterialU(icon, deepShortcutCount, systemShortcuts);
+            container.populateAndShowRowsMaterialU(icon, deepShortcutCount, systemShortcuts); // TODO: Notification!!
         } else {
             container = (PopupContainerWithArrow) context.getLayoutInflater().inflate(
                     R.layout.popup_container, context.getDragLayer(), false);

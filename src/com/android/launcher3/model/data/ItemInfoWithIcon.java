@@ -16,12 +16,15 @@
 
 package com.android.launcher3.model.data;
 
+import static com.android.launcher3.icons.BitmapInfo.FLAG_THEMED;
+
 import android.content.Context;
 import android.content.Intent;
 
 import androidx.annotation.Nullable;
 
 import com.android.launcher3.icons.BitmapInfo;
+import com.android.launcher3.icons.BitmapInfo.DrawableCreationFlags;
 import com.android.launcher3.icons.FastBitmapDrawable;
 import com.android.launcher3.logging.FileLog;
 import com.android.launcher3.pm.PackageInstallInfo;
@@ -82,17 +85,6 @@ public abstract class ItemInfoWithIcon extends ItemInfo {
     public static final int FLAG_SYSTEM_NO = 1 << 7;
 
     public static final int FLAG_SYSTEM_MASK = FLAG_SYSTEM_YES | FLAG_SYSTEM_NO;
-
-    /**
-     * Flag indicating that the icon is an {@link android.graphics.drawable.AdaptiveIconDrawable}
-     * that can be optimized in various way.
-     */
-    public static final int FLAG_ADAPTIVE_ICON = 1 << 8;
-
-    /**
-     * Flag indicating that the icon is badged.
-     */
-    public static final int FLAG_ICON_BADGED = 1 << 9;
 
     /**
      * The icon is being installed. If {@link WorkspaceItemInfo#FLAG_RESTORED_ICON} or
@@ -242,15 +234,15 @@ public abstract class ItemInfoWithIcon extends ItemInfo {
      * Returns a FastBitmapDrawable with the icon.
      */
     public FastBitmapDrawable newIcon(Context context) {
-        return newIcon(context, PreferenceManager.getInstance(context).getThemedIcons().get());
+        return newIcon(context, PreferenceManager.getInstance(context).getThemedIcons().get() 
+            ? FLAG_THEMED : 0);
     }
 
     /**
      * Returns a FastBitmapDrawable with the icon and context theme applied
      */
-    public FastBitmapDrawable newIcon(Context context, boolean applyTheme) {
-        FastBitmapDrawable drawable = applyTheme
-                ? bitmap.newThemedIcon(context) : bitmap.newIcon(context);
+    public FastBitmapDrawable newIcon(Context context, @DrawableCreationFlags int creationFlags) {
+        FastBitmapDrawable drawable = bitmap.newIcon(context, creationFlags);
         drawable.setIsDisabled(isDisabled());
         return drawable;
     }

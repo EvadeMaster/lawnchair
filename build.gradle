@@ -234,6 +234,7 @@ android {
         includeInBundle = false
     }
 
+    // The flavor dimensions for build variants (e.g. aospWithQuickstep, aospWithoutQuickstep)
     // See: https://developer.android.com/studio/build/build-variants#flavor-dimensions
     flavorDimensions += ["app", "recents", "channel"]
 
@@ -242,10 +243,23 @@ android {
             dimension "app"
         }
 
+        /* TODO: @pE-Development: Separate these (Lawnchair Without Quickstep Library)
+        lawnGo {
+            applicationId 'app.lawnchair.go'
+            dimension "app"
+        }
+        */
+
         withQuickstep {
             dimension "recents"
-            minSdk 26
+            minSdk 28
         }
+
+        /* TODO: @pE-Development: Separate these (Lawnchair Without Quickstep Library)
+        withoutQuickstep {
+            dimension "recents"
+        }
+        */
 
         github {
             applicationId 'app.lawnchair'
@@ -293,6 +307,26 @@ android {
         lawnWithQuickstepMarket {
             manifest.srcFile "quickstep/AndroidManifest-launcher.xml"
         }
+
+        /* TODO: @pE-Development: Separate these (Lawnchair Go!)
+        lawnGo {
+            res.srcDirs = ['go/res']
+            java.srcDirs = ['go/src']
+            manifest.srcFile "go/AndroidManifest.xml"
+        }
+        */
+
+        /* TODO: @pE-Development: Separate these (Lawnchair Without Quickstep Library)
+        lawnWithoutQuickstepGithub {
+            manifest.srcFile "AndroidManifest.xml"
+        }
+        */
+
+        /* TODO: @pE-Development: Separate these (Lawnchair Without Quickstep Library)
+        withoutQuickstep {
+            java.srcDirs = ['src_ui_overrides']
+        }
+        */
 
         withQuickstep {
             res.srcDirs = ['quickstep/res', 'quickstep/recents_ui_overrides/res']
@@ -345,6 +379,9 @@ dependencies {
     withQuickstepImplementation projects.compatLib.compatLibVT
     withQuickstepImplementation projects.compatLib.compatLibVU
 
+    // TODO: @pE-Development: Separate Without Quickstep from launcher3-bizzare-adventure
+    //       withoutQuickstepImplementation projects.systemUIPluginCore
+
     implementation fileTree(dir: FRAMEWORK_PREBUILTS_DIR, include: 'SystemUI-statsd-14.jar')
 
     implementation fileTree(dir: FRAMEWORK_PREBUILTS_DIR, include: 'WindowManager-Shell-14.jar')
@@ -383,6 +420,7 @@ dependencies {
     implementation "androidx.navigation:navigation-compose:2.7.7"
     implementation "androidx.palette:palette-ktx:1.0.0"
     implementation "androidx.slice:slice-core:1.1.0-alpha02"
+
     def accompanistVersion = '0.34.0'
     implementation "com.google.accompanist:accompanist-adaptive:$accompanistVersion"
     implementation "com.google.accompanist:accompanist-drawablepainter:$accompanistVersion"
@@ -392,11 +430,13 @@ dependencies {
     implementation 'dev.kdrag0n:colorkt:1.0.5'
     implementation 'io.coil-kt:coil-compose:2.6.0'
     implementation 'me.xdrop:fuzzywuzzy:1.4.0'
+
     def optoVersion = "1.0.18"
     implementation "com.patrykmichalik.opto:domain:$optoVersion"
     implementation "com.patrykmichalik.opto:core:$optoVersion"
     implementation "com.patrykmichalik.opto:compose:$optoVersion"
     implementation "androidx.datastore:datastore-preferences:1.1.1"
+
     def retrofitVersion = "2.11.0"
     implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
     implementation "com.squareup.retrofit2:converter-kotlinx-serialization:$retrofitVersion"
@@ -411,12 +451,38 @@ dependencies {
     // Persian Date
     implementation 'com.github.samanzamani:PersianDate:1.7.1'
 
-    implementation 'com.airbnb.android:lottie:6.4.0'
-
     // Smartspacer
     implementation('com.kieronquinn.smartspacer:sdk-client:1.0.9') {
         exclude group: "com.github.skydoves", module: "balloon"
     }
+
+    implementation 'com.airbnb.android:lottie:6.4.0'
+
+    /* TODO: @LC-Housekeeping, @NullCube (at) launcher3-bizzare-adventure
+    *        Implode all test implementation */
+
+    testImplementation 'junit:junit:4.12'
+    /* TODO: @any
+        Who would have thought that adding test implementation WITHOUT properly adding libs
+        would caused Gradle to go into acquiring and releasing lock on repeat for infinity.
+        -----------------------------------------------------------------------------------
+        We should notify Gradle of this
+        *
+            testImplementation libs.mockitoInlineExtended
+            androidTestImplementation libs.mockitoInlineExtended
+        *
+        -----------------------------------------------------------------------------------
+
+    These are working perfectly fine
+
+    androidTestImplementation "org.mockito:mockito-core:1.9.5"
+    androidTestImplementation 'com.google.dexmaker:dexmaker:1.2'
+    androidTestImplementation 'com.google.dexmaker:dexmaker-mockito:1.2'
+    androidTestImplementation 'com.android.support.test:runner:1.0.0'
+    androidTestImplementation 'com.android.support.test:rules:1.0.0'
+    androidTestImplementation 'com.android.support.test.uiautomator:uiautomator-v18:2.1.2'
+    androidTestImplementation "androidx.annotation:annotation:1.8.0"
+    */
 }
 
 ksp {

@@ -16,6 +16,8 @@
 
 package com.android.launcher3;
 
+import static com.android.launcher3.testing.shared.TestProtocol.SCROLL_FINISHED_MESSAGE;
+
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
@@ -25,10 +27,11 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.app.animation.Interpolators;
 import com.android.launcher3.compat.AccessibilityManagerCompat;
 import com.android.launcher3.views.RecyclerViewFastScroller;
-import com.patrykmichalik.opto.core.PreferenceExtensionsKt;
 
+import com.patrykmichalik.opto.core.PreferenceExtensionsKt;
 import app.lawnchair.preferences2.PreferenceManager2;
 
 
@@ -199,7 +202,7 @@ public abstract class FastScrollRecyclerView extends RecyclerView  {
         super.onScrollStateChanged(state);
 
         if (state == SCROLL_STATE_IDLE) {
-            AccessibilityManagerCompat.sendScrollFinishedEventToTest(getContext());
+            AccessibilityManagerCompat.sendTestProtocolEventToTest(getContext()); // TODO: You WHAT, you take two params, why didn't I know!! can I just obliterate your existence out of this code????
             saveScrollPosition();
         }
     }
@@ -219,5 +222,16 @@ public abstract class FastScrollRecyclerView extends RecyclerView  {
         }
         saveScrollPosition();
         scrollToPosition(savedScrollPosition);
+    }
+
+    /**
+     * Scrolls this recycler view to the bottom with easing and duration.
+     */
+    public void scrollToBottomWithMotion() {
+        if (mScrollbar != null) {
+            mScrollbar.reattachThumbToScroll();
+        }
+        // Emphasized interpolators with 500ms duration
+        smoothScrollBy(0, getAvailableScrollHeight(), Interpolators.EMPHASIZED, 500);
     }
 }

@@ -293,7 +293,7 @@ public abstract class AbstractSlideInView<T extends Context & ActivityContext>
         return true;
     }
 
-    @Override
+    //@Override
     public void onBackProgressed(float backProgress) {
         float deceleratedProgress = Interpolators.PREDICTIVE_BACK_DECELERATED_EASE.getInterpolation(backProgress);
         mIsBackProgressing = backProgress > 0f;

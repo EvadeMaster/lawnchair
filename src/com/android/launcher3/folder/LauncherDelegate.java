@@ -18,6 +18,7 @@ package com.android.launcher3.folder;
 import static com.android.launcher3.logging.StatsLogManager.LauncherEvent.LAUNCHER_FOLDER_CONVERTED_TO_ICON;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -28,7 +29,6 @@ import com.android.launcher3.DragSource;
 import com.android.launcher3.DropTarget;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.LauncherAppState;
-import com.android.launcher3.celllayout.CellPosMapper;
 import com.android.launcher3.dragndrop.DragOptions;
 import com.android.launcher3.logging.InstanceId;
 import com.android.launcher3.logging.StatsLogManager.StatsLogger;
@@ -95,6 +95,7 @@ public class LauncherDelegate {
                         CellLayout cellLayout = mLauncher.getCellLayout(info.container,
                                 mLauncher.getCellPosMapper().mapModelToPresenter(info).screenId);
                         if (cellLayout == null) {
+                            Log.w("LC-LD", "cellLayout remains Null! Returning...");
                             return;
                         }
                         finalItem = info.contents.remove(0);
@@ -112,7 +113,7 @@ public class LauncherDelegate {
 
                     if (newIcon != null) {
                         // We add the child after removing the folder to prevent both from existing
-                        // at the same time in the CellLayout. We need to add the new item with
+                        // at the same time in the CellLayout.  We need to add the new item with
                         // addInScreenFromBind() to ensure that hotseat items are placed correctly.
                         mLauncher.getWorkspace().addInScreenFromBind(newIcon, info);
 
@@ -138,6 +139,7 @@ public class LauncherDelegate {
         }
         return true;
     }
+
 
     boolean interceptOutsideTouch(MotionEvent ev, BaseDragLayer dl, Folder folder) {
         if (mLauncher.getAccessibilityDelegate().isInAccessibleDrag()) {
@@ -174,21 +176,19 @@ public class LauncherDelegate {
         }
 
         @Override
-        void beginDragShared(View child, DragSource source, DragOptions options) {
-        }
+        void beginDragShared(View child, DragSource source, DragOptions options) { }
 
         @Override
         ModelWriter getModelWriter() {
             if (mWriter == null) {
-                mWriter = LauncherAppState.getInstance((Context) mContext).getModel()
-                        .getWriter(false, false, CellPosMapper.DEFAULT, null);
+                mWriter = LauncherAppState.getInstance((Context) mContext).getModel().getWriter(
+                        false, mContext.getCellPosMapper(), null);
             }
             return mWriter;
         }
 
         @Override
-        void forEachVisibleWorkspacePage(Consumer<View> callback) {
-        }
+        void forEachVisibleWorkspacePage(Consumer<View> callback) { }
 
         @Override
         Launcher getLauncher() {
