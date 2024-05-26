@@ -16,7 +16,6 @@
 
 package com.android.launcher3.pageindicators;
 
-import static com.android.launcher3.config.FeatureFlags.SHOW_DOT_PAGINATION; // TODO: @NullCube - Migrate to Prefs, Legacy!
 import static com.android.launcher3.config.FeatureFlags.FOLDABLE_SINGLE_PAGE;
 
 import android.animation.Animator;
@@ -73,7 +72,7 @@ public class PageIndicatorDots extends View implements Insettable, PageIndicator
     private static final int PAGE_INDICATOR_ALPHA = 255;
     private static final int DOT_ALPHA = 128;
     private static final float DOT_ALPHA_FRACTION = 0.5f;
-    private final int DOT_GAP_FACTOR = FeatureFlags.showDotPagination(getContext()) ? 4 : 3; // TODO: @NullCube, showDotPagination Legacy!
+    private final int DOT_GAP_FACTOR = 4;
     private static final int VISIBLE_ALPHA = 255;
     private static final int INVISIBLE_ALPHA = 0;
     private Paint mPaginationPaint;
@@ -158,10 +157,7 @@ public class PageIndicatorDots extends View implements Insettable, PageIndicator
         mPaginationPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mPaginationPaint.setStyle(Style.FILL);
         mPaginationPaint.setColor(ColorTokens.FolderPaginationColor.resolveColor(context));
-        mDotRadius = (FeatureFlags.showDotPagination(context) // TODO: @NullCube, Legacy!
-            ? getResources().getDimension(R.dimen.page_indicator_dot_size_v2)
-            : getResources().getDimension(R.dimen.page_indicator_dot_size))
-            / 2;
+        mDotRadius = getResources().getDimension(R.dimen.page_indicator_dot_size) / 2;
         mCircleGap = DOT_GAP_FACTOR * mDotRadius;
         setOutlineProvider(new MyOutlineProver());
         mIsRtl = Utilities.isRtl(getResources());
@@ -169,7 +165,7 @@ public class PageIndicatorDots extends View implements Insettable, PageIndicator
 
     @Override
     public void setScroll(int currentScroll, int totalScroll) {
-        if (FeatureFlags.showDotPagination(getContext()) && currentScroll == 0 && totalScroll == 0) { // TODO: @NullCube, Legacy!
+        if (currentScroll == 0 && totalScroll == 0) {
             CURRENT_POSITION.set(this, (float) mActivePage);
             return;
         }
@@ -222,7 +218,7 @@ public class PageIndicatorDots extends View implements Insettable, PageIndicator
 
     @Override
     public void setShouldAutoHide(boolean shouldAutoHide) {
-        mShouldAutoHide = shouldAutoHide && FeatureFlags.showDotPagination(getContext()); // TODO: @NullCube, Legacy!
+        mShouldAutoHide = shouldAutoHide;
         if (shouldAutoHide && mPaginationPaint.getAlpha() > INVISIBLE_ALPHA) {
             hideAfterDelay();
         } else if (!shouldAutoHide) {
@@ -433,16 +429,14 @@ public class PageIndicatorDots extends View implements Insettable, PageIndicator
             int alpha = mPaginationPaint.getAlpha();
 
             // Here we draw the dots
-            mPaginationPaint.setAlpha(FeatureFlags.showDotPagination(getContext())
-                    ? ((int) (alpha * DOT_ALPHA_FRACTION))
-                    : DOT_ALPHA); // TODO: @NullCube, Legacy!
+            mPaginationPaint.setAlpha(DOT_ALPHA);
             for (int i = 0; i < mNumPages; i++) {
                 canvas.drawCircle(x, y, mDotRadius, mPaginationPaint);
                 x += circleGap;
             }
 
             // Here we draw the current page indicator
-            mPaginationPaint.setAlpha(FeatureFlags.showDotPagination(getContext()) ? alpha : PAGE_INDICATOR_ALPHA); // TODO: @NullCube, Legacy!
+            mPaginationPaint.setAlpha(alpha);
             canvas.drawRoundRect(getActiveRect(), mDotRadius, mDotRadius, mPaginationPaint);
         }
     }
@@ -511,7 +505,7 @@ public class PageIndicatorDots extends View implements Insettable, PageIndicator
         @Override
         public void onAnimationEnd(Animator animation) {
             if (!mCancelled) {
-                if (mShouldAutoHide && FeatureFlags.showDotPagination(getContext())) { // TODO: @NullCube, Legacy!
+                if (mShouldAutoHide) {
                     hideAfterDelay();
                 }
                 mAnimator = null;

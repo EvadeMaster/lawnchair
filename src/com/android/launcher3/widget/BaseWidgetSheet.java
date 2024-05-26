@@ -16,7 +16,6 @@
 package com.android.launcher3.widget;
 
 import static com.android.app.animation.Interpolators.EMPHASIZED;
-import static com.android.launcher3.Flags.enableUnfoldedTwoPanePicker;
 import static com.android.launcher3.LauncherPrefs.WIDGETS_EDUCATION_TIP_SEEN;
 
 import android.content.Context;
@@ -217,7 +216,7 @@ public abstract class BaseWidgetSheet extends AbstractSlideInView<BaseActivity>
             return getResources().getDimensionPixelSize(
                     R.dimen.widget_picker_landscape_tablet_left_right_margin);
         }
-        if (deviceProfile.isTwoPanels && true) { // TODO: enableUnfoldedTwoPanePicker
+        if (deviceProfile.isTwoPanels) {
             return getResources().getDimensionPixelSize(
                     R.dimen.widget_picker_two_panels_left_right_margin);
         }
