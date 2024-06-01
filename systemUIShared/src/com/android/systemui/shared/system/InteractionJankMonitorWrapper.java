@@ -60,6 +60,8 @@ public final class InteractionJankMonitorWrapper {
             InteractionJankMonitor.CUJ_LAUNCHER_APP_SWIPE_TO_RECENTS;
     public static final int CUJ_OPEN_SEARCH_RESULT =
             InteractionJankMonitor.CUJ_LAUNCHER_OPEN_SEARCH_RESULT;
+    public static final int CUJ_LAUNCHER_UNFOLD_ANIM = 83;
+    public static final int CUJ_SEARCH_QSB_OPEN = 87;
     public static final int CUJ_SHADE_EXPAND_FROM_STATUS_BAR = 79;
 
     @IntDef({
@@ -77,6 +79,8 @@ public final class InteractionJankMonitorWrapper {
             CUJ_CLOSE_ALL_APPS_SWIPE,
             CUJ_CLOSE_ALL_APPS_TO_HOME,
             CUJ_OPEN_SEARCH_RESULT,
+            CUJ_LAUNCHER_UNFOLD_ANIM,
+            CUJ_SEARCH_QSB_OPEN,
             CUJ_SHADE_EXPAND_FROM_STATUS_BAR,
     })
     @Retention(RetentionPolicy.SOURCE)
