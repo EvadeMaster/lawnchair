@@ -139,7 +139,7 @@ public class UserCache implements SafeCloseable {
     public UserIconInfo getUserInfo(UserHandle user) {
         UserIconInfo info = mUserToSerialMap.get(user);
         return info == null ? new UserIconInfo(user, UserIconInfo.TYPE_MAIN) : info;
-    } // TODO: New!
+    }
 
     /**
      * @see UserManager#getUserForSerialNumber(long)
