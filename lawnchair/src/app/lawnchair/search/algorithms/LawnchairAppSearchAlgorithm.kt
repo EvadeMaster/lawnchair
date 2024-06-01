@@ -120,7 +120,7 @@ class LawnchairAppSearchAlgorithm(context: Context) : LawnchairSearchAlgorithm(c
         val shortcuts = ShortcutRequest(context.launcher, app.user)
             .withContainer(app.targetComponent)
             .query(ShortcutRequest.PUBLISHED)
-        return PopupPopulator.sortAndFilterShortcuts(shortcuts, null)
+        return PopupPopulator.sortAndFilterShortcuts(shortcuts)
     }
 
     private fun normalSearch(apps: List<AppInfo>, query: String): List<AppInfo> {
