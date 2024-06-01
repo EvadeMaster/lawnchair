@@ -78,29 +78,29 @@ class OverlayCallbackImpl(private val mLauncher: LawnchairLauncher) :
         mClient.hideOverlay(duration)
     }
 
-    override fun startSearch(config: ByteArray?, extras: Bundle?): Boolean = false
+    fun startSearch(config: ByteArray?, extras: Bundle?): Boolean = false
 
-    override fun onActivityCreated(activity: Activity, bundle: Bundle?) = Unit
+    fun onActivityCreated(activity: Activity, bundle: Bundle?) = Unit
 
-    override fun onActivityStarted(activity: Activity) {
+    fun onActivityStarted(activity: Activity) {
         mClient.onStart()
     }
 
-    override fun onActivityResumed(activity: Activity) {
+    fun onActivityResumed(activity: Activity) {
         mClient.onResume()
     }
 
-    override fun onActivityPaused(activity: Activity) {
+    fun onActivityPaused(activity: Activity) {
         mClient.onPause()
     }
 
-    override fun onActivityStopped(activity: Activity) {
+    fun onActivityStopped(activity: Activity) {
         mClient.onStop()
     }
 
-    override fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle) = Unit
+    fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle) = Unit
 
-    override fun onActivityDestroyed(activity: Activity) {
+    fun onActivityDestroyed(activity: Activity) {
         mClient.onDestroy()
         mClient.mDestroyed = true
     }
