@@ -161,7 +161,7 @@ class SearchResultIcon(context: Context, attrs: AttributeSet?) :
             isVisible = false
             return
         }
-        icon = appInfo.newIcon(context, false)
+        icon = appInfo.newIcon(context, 0) // TODO: @nullcube I assume false = 0
     }
 
     private fun bindFromApp(componentName: ComponentName, user: UserHandle) {
